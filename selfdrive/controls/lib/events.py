@@ -257,8 +257,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.startup: {
     ET.PERMANENT: Alert(
-      "Be ready to take over at any time",
-      "Always keep hands on wheel and eyes on road",
+      "openpilot Initalized",
+      "Toggle autosteer with the LFA button.",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 15.),
   },
@@ -520,7 +520,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.manualSteeringRequired: {
     ET.WARNING: Alert(
-      "Lane Keeping Assist is OFF",
+      "Automatic Lane Centering is OFF",
       "Manual Steering Required",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeDisengage, 1., 2., 2.),
@@ -528,7 +528,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.manualLongitudinalRequired: {
     ET.WARNING: Alert(
-      "Adaptive Cruise Control is OFF",
+      "Smart Cruise Control is OFF",
       "Manual Gas/Brakes Required",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1., 2., 2.),
