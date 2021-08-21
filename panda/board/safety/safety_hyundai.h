@@ -157,6 +157,18 @@ static int hyundai_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       cruise_engaged_prev = cruise_engaged;
     }
 
+    if (addr == 913) {
+      // 2 bits: 13-14
+      bool lfa_pressed = (GET_BYTES_04(to_push) >> 4) & 0x1; // LFA on signal
+      if (lfa_pressed_prev != lfa_pressed)
+      {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+      }
+      lfa_pressed_prev = lfa_pressed;
+    }
+
+/***
     if (addr == 1056) {
       // 2 bits: 13-14
       bool acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC main_on signal
@@ -167,6 +179,7 @@ static int hyundai_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       }
       acc_main_on_prev = acc_main_on;
     }
+***/
 
     // read gas pressed signal
     if ((addr == 881) && hyundai_ev_gas_signal) {
