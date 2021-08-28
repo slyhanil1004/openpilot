@@ -88,7 +88,7 @@ void safety_setter_thread(Panda *panda) {
   cereal::CarParams::Reader car_params = cmsg.getRoot<cereal::CarParams>();
   cereal::CarParams::SafetyModel safety_model = car_params.getSafetyModel();
 
-  panda->set_unsafe_mode(p.getBool("DisableDisengageOnGasToggle") ? 1 : 0);  // see safety_declarations.h for allowed values
+  panda->set_unsafe_mode(1);  // see safety_declarations.h for allowed values
 
   auto safety_param = car_params.getSafetyParam();
   LOGW("setting safety model: %d with param %d", (int)safety_model, safety_param);
@@ -170,7 +170,7 @@ static Panda *usb_retry_connect() {
       LOGW("connected to board");
       return panda;
     }
-    util::sleep_for(100); 
+    util::sleep_for(100);
   };
   return nullptr;
 }
