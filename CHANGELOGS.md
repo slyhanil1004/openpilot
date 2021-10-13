@@ -1,3 +1,7 @@
+sunnypilot - Version 0.8.9-3
+========================
+ * Update home screen brand and version structure
+
 sunnypilot - Version 0.8.9-2
 ========================
  * Added additional Sonata Hybrid Firmware Versions
