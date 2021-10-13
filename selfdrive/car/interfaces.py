@@ -11,6 +11,7 @@ from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.hyundai.values import FEATURES
+from common.params import Params
 
 GearShifter = car.CarState.GearShifter
 EventName = car.CarEvent.EventName
@@ -29,7 +30,7 @@ class CarInterfaceBase():
   def __init__(self, CP, CarController, CarState):
     self.CP = CP
     self.VM = VehicleModel(CP)
-    self.disengage_on_gas = False
+    self.disengage_on_gas = Params().get_bool("DisengageOnGas")
 
     self.frame = 0
     self.steer_warning = 0
@@ -157,6 +158,13 @@ class CarInterfaceBase():
           events.add(EventName.silentPedalPressed)
       elif self.CP.carFingerprint not in FEATURES["use_lfa_button"]:
         if (cs_out.accMainEnabled):
+          cs_out.disengageByBrake= True
+        if (cs_out.cruiseState.enabled):
+          events.add(EventName.pedalPressed)
+        else:
+          events.add(EventName.silentPedalPressed)
+      elif self.CP.carFingerprint in TOYOTA_CAR:
+        if (cs_out.lkasEnabled):
           cs_out.disengageByBrake= True
         if (cs_out.cruiseState.enabled):
           events.add(EventName.pedalPressed)

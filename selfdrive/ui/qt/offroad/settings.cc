@@ -74,11 +74,6 @@ TogglesPanel::TogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "In this mode openpilot will ignore lanelines and just drive how it thinks a human would.",
                                   "../assets/offroad/icon_road.png",
                                   this));
-  toggles.append(new ParamControl("QuietDrive",
-                                  "Quiet Drive 🤫",
-                                  "In this mode openpilot will display alerts but only play the most important warning sounds. ",
-                                  "../assets/offroad/icon_mute.png",
-                                  this));
 
 #ifdef ENABLE_MAPS
   toggles.append(new ParamControl("NavSettingTime24h",
@@ -359,6 +354,18 @@ FeaturePanel::FeaturePanel(QWidget* parent) : QWidget(parent) {
   )");
 
   QList<ParamControl*> toggles;
+
+  toggles.append(new ParamControl("QuietDrive",
+                                  "Quiet Drive 🤫",
+                                  "In this mode openpilot will display alerts but only play the most important warning sounds. ",
+                                  "../assets/offroad/icon_mute.png",
+                                  this));
+
+  toggles.append(new ParamControl("DisengageOnGas",
+                                  "Enable Disengage On Gas",
+                                  "Disengage sunnypilot by pressing the gas pedal.",
+                                  "../assets/offroad/icon_gas_pedal.png",
+                                  this));
 
   for(ParamControl *toggle : toggles) {
     if(main_layout->count() != 0) {

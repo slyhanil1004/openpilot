@@ -1,3 +1,8 @@
+sunnypilot - Version 0.8.9-4
+========================
+ * Added Enable Disengage On Gas toggle to Features panel
+ * Moved Quiet Drive 🤫 toggle to Features panel
+
 sunnypilot - Version 0.8.9-3
 ========================
  * Update home screen brand and version structure
