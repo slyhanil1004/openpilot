@@ -12,6 +12,8 @@ from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.hyundai.values import FEATURES
 from selfdrive.car.toyota.values import TOYOTA_CAR
+from selfdrive.car.honda.values import HONDA_CAR
+
 
 GearShifter = car.CarState.GearShifter
 EventName = car.CarEvent.EventName
@@ -163,7 +165,7 @@ class CarInterfaceBase():
           events.add(EventName.pedalPressed)
         else:
           events.add(EventName.silentPedalPressed)
-      elif self.CP.carFingerprint in TOYOTA_CAR:
+      elif self.CP.carFingerprint in TOYOTA_CAR or HONDA_CAR:
         if (cs_out.lkasEnabled):
           cs_out.disengageByBrake= True
         if (cs_out.cruiseState.enabled):
