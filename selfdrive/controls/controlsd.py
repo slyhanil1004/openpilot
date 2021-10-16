@@ -140,6 +140,7 @@ class Controls:
     self.soft_disable_timer = 0
     self.v_cruise_kph = 255
     self.v_cruise_kph_last = 0
+    self.cruiseState_enabled_last = False
     self.mismatch_counter = 0
     self.can_error_counter = 0
     self.last_blinker_frame = 0
@@ -427,7 +428,17 @@ class Controls:
           else:
             self.state = State.enabled
           self.current_alert_types.append(ET.ENABLE)
-          self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
+          if not self.CP.pcmCruise:
+            if CS.cruiseState.enabled:
+              self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
+          else:
+            self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
+
+    if not self.CP.pcmCruise:
+      if CS.cruiseState.enabled and not self.cruiseState_enabled_last:
+        self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
+
+      self.cruiseState_enabled_last = CS.cruiseState.enabled
 
     # Check if actuators are enabled
     self.active = self.state == State.enabled or self.state == State.softDisabling
