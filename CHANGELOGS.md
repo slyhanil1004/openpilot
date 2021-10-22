@@ -1,3 +1,7 @@
+sunnypilot - Version 0.8.9-4
+========================
+* Hyundai: Fix Ioniq Hybrid signals
+
 sunnypilot - Version 0.8.9-3
 ========================
  * Update home screen brand and version structure
