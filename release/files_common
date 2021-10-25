@@ -190,8 +190,6 @@ selfdrive/common/version.h
 
 selfdrive/common/framebuffer.h
 selfdrive/common/framebuffer.cc
-selfdrive/common/glutil.cc
-selfdrive/common/glutil.h
 selfdrive/common/touch.[c,h]
 selfdrive/common/swaglog.h
 selfdrive/common/swaglog.cc
@@ -595,9 +593,11 @@ opendbc/nissan_x_trail_2017.dbc
 opendbc/nissan_leaf_2018.dbc
 
 opendbc/subaru_global_2017_generated.dbc
+opendbc/subaru_global_2020_hybrid_generated.dbc
 opendbc/subaru_outback_2015_generated.dbc
 opendbc/subaru_outback_2019_generated.dbc
 opendbc/subaru_forester_2017_generated.dbc
+opendbc/subaru_wrx_2018_generated.dbc
 
 opendbc/toyota_rav4_hybrid_2017_pt_generated.dbc
 opendbc/toyota_rav4_2017_pt_generated.dbc

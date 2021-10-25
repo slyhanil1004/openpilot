@@ -7,6 +7,7 @@ from panda.python.uds import UdsClient, MessageTimeoutError, NegativeResponseErr
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument('--rxoffset', default="0x8")
+  parser.add_argument('--timeout', default="0.3")
   parser.add_argument('--nonstandard', action='store_true')
   parser.add_argument('--debug', action='store_true')
   parser.add_argument('--addr')
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         continue
       t.set_description(hex(addr))
 
-      uds_client = UdsClient(panda, addr, addr + int(args.rxoffset, base=16), bus=1 if panda.has_obd() else 0, timeout=0.2, debug=args.debug)
+      uds_client = UdsClient(panda, addr, addr + int(args.rxoffset, base=16), bus=1 if panda.has_obd() else 0, timeout=float(args.timeout), debug=args.debug)
       # Check for anything alive at this address, and switch to the highest
       # available diagnostic session without security access
       try:
