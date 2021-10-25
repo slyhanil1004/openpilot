@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -11,12 +12,16 @@
 #include "nanovg.h"
 
 #include "cereal/messaging/messaging.h"
+#include "cereal/visionipc/visionipc.h"
+#include "cereal/visionipc/visionipc_client.h"
 #include "common/transformations/orientation.hpp"
 #include "selfdrive/camerad/cameras/camera_common.h"
+#include "selfdrive/common/glutil.h"
 #include "selfdrive/common/mat.h"
 #include "selfdrive/common/modeldata.h"
 #include "selfdrive/common/params.h"
 #include "selfdrive/common/util.h"
+#include "selfdrive/common/visionimg.h"
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -65,7 +70,7 @@ typedef struct Alert {
   }
 } Alert;
 
-const Alert CONTROLS_WAITING_ALERT = {"openpilot Unavailable", "Waiting for controls to start", 
+const Alert CONTROLS_WAITING_ALERT = {"openpilot Unavailable", "Waiting for controls to start",
                                       "controlsWaiting", cereal::ControlsState::AlertSize::MID,
                                       AudibleAlert::NONE};
 
@@ -148,7 +153,15 @@ typedef struct UIScene {
 } UIScene;
 
 typedef struct UIState {
-  int fb_w = 0, fb_h = 0;
+  VisionIpcClient * vipc_client;
+  VisionIpcClient * vipc_client_rear;
+  VisionIpcClient * vipc_client_wide;
+  VisionBuf * last_frame;
+
+  // framebuffer
+  int fb_w, fb_h;
+
+  // NVG
   NVGcontext *vg;
 
   // images
@@ -157,7 +170,14 @@ typedef struct UIState {
   std::unique_ptr<SubMaster> sm;
 
   UIStatus status;
-  UIScene scene = {};
+  UIScene scene;
+
+  // graphics
+  std::unique_ptr<GLShader> gl_shader;
+  std::unique_ptr<EGLImageTexture> texture[UI_BUF_COUNT];
+
+  GLuint frame_vao, frame_vbo, frame_ibo;
+  mat4 rear_frame_mat;
 
   bool awake;
 
