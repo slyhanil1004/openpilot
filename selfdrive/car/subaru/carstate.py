@@ -17,8 +17,32 @@ class CarState(CarStateBase):
     params = Params()
     self.has_epb = params.get("ManualParkingBrakeSNGToggle", encoding='utf8') == "0"
 
+    self.resumeAvailable = False
+    self.accEnabled = False
+    self.accMainEnabled = False
+    self.leftBlinkerOn = False
+    self.rightBlinkerOn = False
+    self.disengageByBrake = False
+    self.belowLaneChangeSpeed = True
+    self.automaticLaneChange = True
+
+    self.cruise_buttons = 0
+    self.cruise_res = 0
+    self.cruise_set = 0
+    self.prev_cruise_buttons = 0
+    self.prev_cruise_res = 0
+    self.prev_cruise_set = 0
+
+    self.acc_main_enabled = None
+    self.prev_acc_main_enabled = None
+
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
+
+    self.prev_cruise_buttons = self.cruise_buttons
+    self.prev_cruise_res = self.cruise_res
+    self.prev_cruise_set = self.cruise_set
+    self.prev_acc_main_enabled = self.acc_main_enabled
 
     if self.car_fingerprint == CAR.CROSSTREK_2020H:
       ret.gas = cp_body.vl["Throttle_Hybrid"]["Throttle_Pedal"] / 255.
@@ -49,9 +73,31 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.vEgoRaw < 0.01
 
+    self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
+
+    if self.car_fingerprint == CAR.OUTBACK:
+      self.acc_main_enabled = cp_body.vl["CruiseControl"]["Cruise_On"] == 0
+    elif self.car_fingerprint == CAR.CROSSTREK_2020H:
+      self.acc_main_enabled = cp_cam.vl["ES_DashStatus"]['Cruise_On'] == 0
+    else:
+      self.acc_main_enabled = cp.vl["Cruise_Buttons"]["Main"] == 0
+
+    self.cruise_set = cp_cam.vl["ES_Distance"]["Cruise_Set"] == 0
+    if self.cruise_set == 1:
+      self.cruise_buttons = 6
+    self.cruise_res = cp_cam.vl["ES_Distance"]["Cruise_Resume"] == 0
+    if self.cruise_res == 1:
+      self.cruise_buttons = 7
+
+    if self.prev_acc_main_enabled is None:
+      self.prev_acc_main_enabled = self.acc_main_enabled
+
     # continuous blinker signals for assisted lane change
     ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(
       50, cp.vl["Dashlights"]["LEFT_BLINKER"], cp.vl["Dashlights"]["RIGHT_BLINKER"])
+
+    self.leftBlinkerOn = cp.vl["Dashlights"]["LEFT_BLINKER"] != 0
+    self.rightBlinkerOn = cp.vl["Dashlights"]["RIGHT_BLINKER"] != 0
 
     if self.CP.enableBsm:
       ret.leftBlindspot = (cp.vl["BSD_RCTA"]["L_ADJACENT"] == 1) or (cp.vl["BSD_RCTA"]["L_APPROACHING"] == 1)
@@ -85,6 +131,27 @@ class CarState(CarStateBase):
        (self.car_fingerprint not in PREGLOBAL_CARS and cp.vl["Dashlights"]["UNITS"] == 1):
       ret.cruiseState.speed *= CV.MPH_TO_KPH
 
+    if ret.cruiseState.available:
+      if self.prev_cruise_set == 1 and self.prev_cruise_buttons == 6: # SET_DECEL
+        if self.cruise_set != 1 and self.cruise_buttons != 6:
+          self.accEnabled = True
+      elif self.prev_cruise_res == 1 and self.prev_cruise_buttons == 7 and self.resumeAvailable == True: # RES_ACCEL
+        if self.cruise_res != 1 and self.cruise_buttons != 7:
+          self.accEnabled = True
+      if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
+        if self.acc_main_enabled == 1:
+          self.accMainEnabled = not self.accMainEnabled
+    else:
+      self.accMainEnabled = False
+      self.accEnabled = False
+
+    ret.steerWarning = False
+
+    if self.accMainEnabled:
+      if self.car_fingerprint not in PREGLOBAL_CARS:
+        if (self.automaticLaneChange and not self.belowLaneChangeSpeed and (self.rightBlinkerOn or self.leftBlinkerOn)) or not (self.rightBlinkerOn or self.leftBlinkerOn):
+          ret.steerWarning = cp.vl["Steering_Torque"]["Steer_Warning"] == 1
+
     ret.seatbeltUnlatched = cp.vl["Dashlights"]["SEATBELT_FL"] == 1
     ret.doorOpen = any([cp.vl["BodyInfo"]["DOOR_OPEN_RR"],
                         cp.vl["BodyInfo"]["DOOR_OPEN_RL"],
@@ -100,7 +167,6 @@ class CarState(CarStateBase):
       self.car_follow = cp_cam.vl["ES_Distance"]["Car_Follow"]
       self.close_distance = cp_cam.vl["ES_Distance"]["Close_Distance"]
     else:
-      ret.steerWarning = cp.vl["Steering_Torque"]["Steer_Warning"] == 1
       ret.cruiseState.nonAdaptive = cp_cam.vl["ES_DashStatus"]["Conventional_Cruise"] == 1
       self.cruise_state = cp_cam.vl["ES_DashStatus"]["Cruise_State"]
       self.brake_pedal_msg = copy.copy(cp.vl["Brake_Pedal"])
@@ -168,6 +234,7 @@ class CarState(CarStateBase):
       signals += [
         ("Cruise_On", "CruiseControl", 0),
         ("Cruise_Activated", "CruiseControl", 0),
+        ("Main", "Cruise_Buttons", 0),
       ]
 
     if CP.carFingerprint in PREGLOBAL_CARS:

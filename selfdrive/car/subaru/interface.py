@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.subaru.values import CAR, PREGLOBAL_CARS
+from selfdrive.car.subaru.values import CAR, PREGLOBAL_CARS, Buttons
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 
+EventName = car.CarEvent.EventName
+ButtonType = car.CarState.ButtonEvent.Type
+
 class CarInterface(CarInterfaceBase):
+  def __init__(self, CP, CarController, CarState):
+    super().__init__(CP, CarController, CarState)
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
@@ -172,7 +177,116 @@ class CarInterface(CarInterfaceBase):
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
-    ret.events = self.create_common_events(ret).to_msg()
+    ret.accMainEnabled = self.CS.accMainEnabled
+    ret.accEnabled = self.CS.accEnabled
+    ret.leftBlinkerOn = self.CS.leftBlinkerOn
+    ret.rightBlinkerOn = self.CS.rightBlinkerOn
+    ret.automaticLaneChange = self.CS.automaticLaneChange
+    ret.belowLaneChangeSpeed = self.CS.belowLaneChangeSpeed
+
+    buttonEvents = []
+
+    # SET / CANCEL
+    if ret.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
+      be = car.CarState.ButtonEvent.new_message()
+      be.pressed = False
+      be.type = ButtonType.setCruise
+      buttonEvents.append(be)
+    elif self.CS.out.cruiseState.enabled and not ret.cruiseState.enabled:
+      be = car.CarState.ButtonEvent.new_message()
+      be.pressed = True
+      be.type = ButtonType.cancel
+      buttonEvents.append(be)
+
+    # ACCEL / DECEL
+    if self.CP.carFingerprint in PREGLOBAL_CARS:
+      if self.CS.cruise_button != self.CS.prev_cruise_button:
+        be = car.CarState.ButtonEvent.new_message()
+        be.type = ButtonType.unknown
+        if self.CS.cruise_button in [Buttons.RESUME_SHALLOW, Buttons.RESUME_DEEP, Buttons.SET_SHALLOW, Buttons.SET_DEEP]:
+          be.pressed = True
+          but = self.CS.cruise_button
+        else:
+          be.pressed = False
+          but = self.CS.prev_cruise_button
+        if but in [Buttons.RESUME_SHALLOW, Buttons.RESUME_DEEP]:
+          be.type = ButtonType.accelCruise
+        elif but in [Buttons.SET_SHALLOW, Buttons.SET_DEEP]:
+          be.type = ButtonType.decelCruise
+        buttonEvents.append(be)
+    else:
+      if self.CS.cruise_buttons != self.CS.prev_cruise_buttons:
+        be = car.CarState.ButtonEvent.new_message()
+        be.type = ButtonType.unknown
+        if self.CS.cruise_buttons in [Buttons.RES_ACCEL, Buttons.SET_DECEL]:
+          be.pressed = True
+          but = self.CS.cruise_buttons
+        else:
+          be.pressed = False
+          but = self.CS.prev_cruise_buttons
+        if but in [Buttons.RES_ACCEL]:
+          be.type = ButtonType.accelCruise
+        elif but in [Buttons.SET_DECEL]:
+          be.type = ButtonType.decelCruise
+        buttonEvents.append(be)
+
+    # ACC MAIN BUTTON
+    if self.CS.out.accMainEnabled != self.CS.accMainEnabled:
+      be = car.CarState.ButtonEvent.new_message()
+      be.pressed = True
+      be.type = ButtonType.altButton1
+      buttonEvents.append(be)
+
+    ret.buttonEvents = buttonEvents
+
+    #events
+    events = self.create_common_events(ret, pcm_enable=False)
+
+    self.CS.disengageByBrake = self.CS.disengageByBrake or ret.disengageByBrake
+
+    enable_pressed = False
+    enable_from_brake = False
+
+    if self.CS.disengageByBrake and not ret.brakePressed and self.CS.accMainEnabled:
+      enable_pressed = True
+      enable_from_brake = True
+
+    if not ret.brakePressed:
+      self.CS.disengageByBrake = False
+      ret.disengageByBrake = False
+
+    # handle button presses
+    for b in ret.buttonEvents:
+
+      # do enable on both accel and decel buttons
+      if b.type in [ButtonType.setCruise] and not b.pressed:
+        enable_pressed = True
+
+      # do disable on ACC Main button if ACC is disabled
+      if b.type in [ButtonType.altButton1] and b.pressed:
+        if not self.CS.accMainEnabled: #disabled ACC Main
+          if not ret.cruiseState.enabled:
+            events.add(EventName.buttonCancel)
+          else:
+            events.add(EventName.manualSteeringRequired)
+        else: #enabled ACC Main
+          if not ret.cruiseState.enabled:
+            enable_pressed = True
+
+      # do disable on button down
+      if b.type == ButtonType.cancel and b.pressed:
+        if not self.CS.accMainEnabled:
+          events.add(EventName.buttonCancel)
+        else:
+          events.add(EventName.manualLongitudinalRequired)
+
+    if (ret.cruiseState.enabled or self.CS.accMainEnabled) and enable_pressed:
+      if enable_from_brake:
+        events.add(EventName.silentButtonEnable)
+      else:
+        events.add(EventName.buttonEnable)
+
+    ret.events = events.to_msg()
 
     self.CS.out = ret.as_reader()
     return self.CS.out

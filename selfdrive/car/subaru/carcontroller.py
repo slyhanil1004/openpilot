@@ -2,10 +2,12 @@ from selfdrive.car import apply_std_steer_torque_limits
 from selfdrive.car.subaru import subarucan
 from selfdrive.car.subaru.values import DBC, CAR, PREGLOBAL_CARS, GLOBAL_CARS_SNG, CarControllerParams
 from opendbc.can.packer import CANPacker
+from common.realtime import DT_CTRL
 
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
+    self.signal_last = 0.
     self.apply_steer_last = 0
     self.es_distance_cnt = -1
     self.es_lkas_cnt = -1
@@ -28,6 +30,10 @@ class CarController():
 
   def update(self, enabled, CS, frame, actuators, pcm_cancel_cmd, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
 
+    cur_time = frame * DT_CTRL
+    if (CS.leftBlinkerOn or CS.rightBlinkerOn):
+      self.signal_last = cur_time
+
     can_sends = []
 
     # *** steering ***
@@ -39,9 +45,11 @@ class CarController():
 
       new_steer = int(round(apply_steer))
       apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.p)
-      self.steer_rate_limited = new_steer != apply_steer
+      self.steer_rate_limited = False
 
-      if not enabled:
+      if enabled and CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
+        self.steer_rate_limited = new_steer != apply_steer
+      else:
         apply_steer = 0
 
       if CS.CP.carFingerprint in PREGLOBAL_CARS:
@@ -144,7 +152,7 @@ class CarController():
           pcm_cancel_cmd = False
 
       if self.es_lkas_cnt != CS.es_lkas_msg["Counter"]:
-        can_sends.append(subarucan.create_es_lkas(self.packer, CS.es_lkas_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart))
+        can_sends.append(subarucan.create_es_lkas(self.packer, CS.es_lkas_msg, CS.accMainEnabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart))
         self.es_lkas_cnt = CS.es_lkas_msg["Counter"]
 
       if self.es_dashstatus_cnt != CS.es_dashstatus_msg["Counter"]:
