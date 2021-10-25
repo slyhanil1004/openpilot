@@ -25,13 +25,8 @@ class CarState(CarStateBase):
     self.disengageByBrake = False
     self.belowLaneChangeSpeed = True
     self.automaticLaneChange = True
-
-    self.cruise_buttons = 0
-    self.cruise_res = 0
-    self.cruise_set = 0
-    self.prev_cruise_buttons = 0
-    self.prev_cruise_res = 0
-    self.prev_cruise_set = 0
+    self.global_cruise_set = False
+    self.global_cruise_res = False
 
     self.acc_main_enabled = None
     self.prev_acc_main_enabled = None
@@ -39,10 +34,12 @@ class CarState(CarStateBase):
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
 
-    self.prev_cruise_buttons = self.cruise_buttons
-    self.prev_cruise_res = self.cruise_res
-    self.prev_cruise_set = self.cruise_set
+    self.prev_cruise_button = self.cruise_button
     self.prev_acc_main_enabled = self.acc_main_enabled
+
+    self.prev_global_cruise_set = self.global_cruise_set
+    self.prev_global_cruise_res = self.global_cruise_res
+    self.prev_global_cruise_buttons = self.global_cruise_buttons
 
     if self.car_fingerprint == CAR.CROSSTREK_2020H:
       ret.gas = cp_body.vl["Throttle_Hybrid"]["Throttle_Pedal"] / 255.
@@ -75,19 +72,18 @@ class CarState(CarStateBase):
 
     self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
 
-    if self.car_fingerprint == CAR.OUTBACK:
-      self.acc_main_enabled = cp_body.vl["CruiseControl"]["Cruise_On"] == 0
-    elif self.car_fingerprint == CAR.CROSSTREK_2020H:
-      self.acc_main_enabled = cp_cam.vl["ES_DashStatus"]['Cruise_On'] == 0
+    if self.car_fingerprint in PREGLOBAL_CARS:
+      self.acc_main_enabled = cp_cam.vl["ES_Distance"]["Cruise_Button"] == 0
     else:
       self.acc_main_enabled = cp.vl["Cruise_Buttons"]["Main"] == 0
-
-    self.cruise_set = cp_cam.vl["ES_Distance"]["Cruise_Set"] == 0
-    if self.cruise_set == 1:
-      self.cruise_buttons = 6
-    self.cruise_res = cp_cam.vl["ES_Distance"]["Cruise_Resume"] == 0
-    if self.cruise_res == 1:
-      self.cruise_buttons = 7
+      self.global_cruise_set = cp.vl["Cruise_Buttons"]["Set"]
+      self.global_cruise_res = cp.vl["Cruise_Buttons"]["Resume"]
+      if self.global_cruise_set == 1:
+        self.global_cruise_buttons = 6
+      elif self.global_cruise_res == 1:
+        self.global_cruise_buttons = 7
+      else:
+        self.global_cruise_buttons = 0
 
     if self.prev_acc_main_enabled is None:
       self.prev_acc_main_enabled = self.acc_main_enabled
@@ -132,12 +128,21 @@ class CarState(CarStateBase):
       ret.cruiseState.speed *= CV.MPH_TO_KPH
 
     if ret.cruiseState.available:
-      if self.prev_cruise_set == 1 and self.prev_cruise_buttons == 6: # SET_DECEL
-        if self.cruise_set != 1 and self.cruise_buttons != 6:
-          self.accEnabled = True
-      elif self.prev_cruise_res == 1 and self.prev_cruise_buttons == 7 and self.resumeAvailable == True: # RES_ACCEL
-        if self.cruise_res != 1 and self.cruise_buttons != 7:
-          self.accEnabled = True
+      if self.car_fingerprint in PREGLOBAL_CARS:
+        if self.prev_cruise_button == (2 or 3): # SET_SHALLOW or SET_DEEP
+          if self.cruise_button != (2 or 3):
+            self.accEnabled = True
+        elif self.prev_cruise_button == (4 or 5) and self.resumeAvailable == True: # RES_ACCEL
+          if self.cruise_button != (4 or 5):
+            self.accEnabled = True
+      else:
+        if self.prev_global_cruise_buttons == 6: # SET_DECEL
+          if self.global_cruise_set != 6:
+            self.accEnabled = True
+        elif self.prev_global_cruise_res == 7 and self.resumeAvailable == True: #RES_ACCEL
+          if self.global_cruise_res != 7:
+            self.accEnabled = True
+
       if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
         if self.acc_main_enabled == 1:
           self.accMainEnabled = not self.accMainEnabled
@@ -234,7 +239,6 @@ class CarState(CarStateBase):
       signals += [
         ("Cruise_On", "CruiseControl", 0),
         ("Cruise_Activated", "CruiseControl", 0),
-        ("Main", "Cruise_Buttons", 0),
       ]
 
     if CP.carFingerprint in PREGLOBAL_CARS:
@@ -295,6 +299,9 @@ class CarState(CarStateBase):
 
         ("Steer_Warning", "Steering_Torque", 0),
         ("UNITS", "Dashlights", 0),
+        ("Main", "Cruise_Buttons", 0),
+        ("Set", "Cruise_Buttons", 0),
+        ("Resume", "Cruise_Buttons", 0),
       ]
 
       checks += [

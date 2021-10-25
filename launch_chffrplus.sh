@@ -90,6 +90,17 @@ function two_init {
 
   # Check for NEOS update
   if [ $(< /VERSION) != "$REQUIRED_NEOS_VERSION" ]; then
+    if [ -f "$DIR/scripts/continue.sh" ]; then
+      cp "$DIR/scripts/continue.sh" "/data/data/com.termux/files/continue.sh"
+    fi
+
+    if [ ! -f "$BASEDIR/prebuilt" ]; then
+      # Clean old build products, but preserve the scons cache
+      cd $DIR
+      git clean -xdf
+      git submodule foreach --recursive git clean -xdf
+    fi
+
     "$DIR/installer/updater/updater" "file://$DIR/installer/updater/update.json"
   fi
 }
@@ -154,6 +165,11 @@ function launch {
           mv "${STAGING_ROOT}/finalized" $BASEDIR
           cd $BASEDIR
 
+          # Partial mitigation for symlink-related filesystem corruption
+          # Ensure all files match the repo versions after update
+          git reset --hard
+          git submodule foreach --recursive git reset --hard
+
           echo "Restarting launch script ${LAUNCHER_LOCATION}"
           unset REQUIRED_NEOS_VERSION
           unset AGNOS_VERSION
@@ -179,6 +195,12 @@ function launch {
 
   # write tmux scrollback to a file
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
+
+  python ./selfdrive/car/hyundai/values.py > /data/params/d/HyundaiCars
+  python ./selfdrive/car/honda/values.py > /data/params/d/HondaCars
+  python ./selfdrive/car/subaru/values.py > /data/params/d/SubaruCars
+
+  python ./force_car_recognition.py
 
   # start manager
   cd selfdrive/manager

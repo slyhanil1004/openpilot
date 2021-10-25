@@ -215,15 +215,15 @@ class CarInterface(CarInterfaceBase):
           be.type = ButtonType.decelCruise
         buttonEvents.append(be)
     else:
-      if self.CS.cruise_buttons != self.CS.prev_cruise_buttons:
+      if self.CS.global_cruise_buttons != self.CS.prev_global_cruise_buttons:
         be = car.CarState.ButtonEvent.new_message()
         be.type = ButtonType.unknown
-        if self.CS.cruise_buttons in [Buttons.RES_ACCEL, Buttons.SET_DECEL]:
+        if self.CS.global_cruise_buttons in [Buttons.RES_ACCEL, Buttons.SET_DECEL]:
           be.pressed = True
-          but = self.CS.cruise_buttons
+          but = self.CS.global_cruise_buttons
         else:
           be.pressed = False
-          but = self.CS.prev_cruise_buttons
+          but = self.CS.prev_global_cruise_buttons
         if but in [Buttons.RES_ACCEL]:
           be.type = ButtonType.accelCruise
         elif but in [Buttons.SET_DECEL]:

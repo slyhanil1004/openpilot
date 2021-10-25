@@ -45,16 +45,32 @@ static int subaru_legacy_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
+    if (addr == 0x144) {
+      bool acc_main_on = ((GET_BYTE(to_push, 6)) & 1); // ACC main_on signal
+      if (acc_main_on && !acc_main_on_prev)
+      {
+        controls_allowed = 1;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
     // enter controls on rising edge of ACC, exit controls on ACC off
     if (addr == 0x144) {
       int cruise_engaged = ((GET_BYTE(to_push, 6) >> 1) & 1);
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
-      if (!cruise_engaged) {
+      cruise_engaged_prev = cruise_engaged;
+    }
+
+    if (addr == 0x144) {
+      bool acc_main_on = ((GET_BYTE(to_push, 6)) & 1); // ACC main_on signal
+      if (acc_main_on_prev != acc_main_on)
+      {
+        disengageFromBrakes = false;
         controls_allowed = 0;
       }
-      cruise_engaged_prev = cruise_engaged;
+      acc_main_on_prev = acc_main_on;
     }
 
     // sample wheel speed, averaging opposite corners
@@ -170,6 +186,7 @@ static int subaru_legacy_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) 
 }
 
 static const addr_checks* subaru_legacy_init(int16_t param) {
+  disengageFromBrakes = false;
   controls_allowed = false;
   relay_malfunction_reset();
   // Checking for flip driver torque from safety parameter

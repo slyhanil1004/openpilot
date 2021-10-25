@@ -573,3 +573,11 @@ SUBARU_WMI = ['JF1', 'JF2', '4S3', '4S4']
 
 # all cars
 SUBARU_CAR = set([CAR])
+
+def main():
+  for member, value in vars(CAR).items():
+    if not member.startswith("_"):
+      print(value)
+
+if __name__ == "__main__":
+  main()

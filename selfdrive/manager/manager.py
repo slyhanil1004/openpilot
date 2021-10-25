@@ -39,6 +39,7 @@ def manager_init():
     ("EndToEndToggle", "1"),
     ("LanelessMode", "2"),
     ("ManualParkingBrakeSNGToggle", "0"),
+    ("CarModel", ""),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
