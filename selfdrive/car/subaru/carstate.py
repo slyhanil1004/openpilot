@@ -31,11 +31,23 @@ class CarState(CarStateBase):
     self.acc_main_enabled = None
     self.prev_acc_main_enabled = None
 
+    self.cruise_button = 0
+    self.prev_cruise_button = 0
+
+    self.global_cruise_set = 0
+    self.prev_global_cruise_set = 0
+
+    self.global_cruise_res = 0
+    self.prev_global_cruise_res = 0
+
+    self.global_cruise_buttons = 0
+    self.prev_global_cruise_buttons = 0
+
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
 
-    self.prev_cruise_button = self.cruise_button
     self.prev_acc_main_enabled = self.acc_main_enabled
+    self.prev_cruise_button = self.cruise_button
 
     self.prev_global_cruise_set = self.global_cruise_set
     self.prev_global_cruise_res = self.global_cruise_res
