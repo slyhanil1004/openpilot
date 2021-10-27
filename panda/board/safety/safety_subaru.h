@@ -86,12 +86,12 @@ static int subaru_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     }
 
     if (addr == 0x240) {
-      bool lkas_active = ((GET_BYTES_04(to_push) >> 17) & 1); // LKAS_ACTIVE signal
-      if (lkas_active && !lkas_active_prev)
+      bool acc_main_on = ((GET_BYTES_48(to_push) >> 8) & 1); // ACC main_on signal
+      if (acc_main_on && !acc_main_on_prev)
       {
         controls_allowed = 1;
       }
-      lkas_active_prev = lkas_active;
+      acc_main_on_prev = acc_main_on;
     }
 
     // enter controls on rising edge of ACC, exit controls on ACC off
