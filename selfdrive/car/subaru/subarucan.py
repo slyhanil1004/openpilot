@@ -66,8 +66,7 @@ def create_es_lkas(packer, es_lkas_msg, acc_main_enabled, visual_alert, left_lin
     values["LKAS_ACTIVE"] = 1 # Show LKAS lane lines
     values["LKAS_Dash_State"] = 2 # Green enabled indicator
   else:
-    values["LKAS_ACTIVE"] = 0 # No LKAS lane lines
-    values["LKAS_Dash_State"] = 0 # LKAS Not enabled
+     values["LKAS_Dash_State"] = 0 # LKAS Not enabled
 
   values["LKAS_Left_Line_Visible"] = int(left_line)
   values["LKAS_Right_Line_Visible"] = int(right_line)

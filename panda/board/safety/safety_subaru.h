@@ -85,7 +85,7 @@ static int subaru_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
-    if (addr == 0x322) {
+    if (addr == 0x240) {
       bool lkas_active = ((GET_BYTES_04(to_push) >> 17) & 1); // LKAS_ACTIVE signal
       if (lkas_active && !lkas_active_prev)
       {
