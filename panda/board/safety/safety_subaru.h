@@ -86,7 +86,7 @@ static int subaru_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     }
 
     if (addr == 0x322) {
-      bool lkas_active = ((GET_BYTES_04(to_push) >> 24) & 1); // lkas_active signal
+      bool lkas_active = (GET_BYTE(to_push, 3) & 1); // LKAS_Left_Line_Enable signal
       if (lkas_active && !lkas_active_prev)
       {
         controls_allowed = 1;
@@ -103,14 +103,14 @@ static int subaru_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       cruise_engaged_prev = cruise_engaged;
     }
 
-    if (addr == 0x240) {
-      bool acc_main_on = ((GET_BYTES_48(to_push) >> 8) & 1); // ACC main_on signal
-      if (acc_main_on_prev != acc_main_on)
+    if (addr == 0x322) {
+      bool lkas_active = (GET_BYTE(to_push, 3) & 1); // LKAS_Left_Line_Enable signal
+      if (lkas_active_prev != lkas_active)
       {
         disengageFromBrakes = false;
         controls_allowed = 0;
       }
-      acc_main_on_prev = acc_main_on;
+      lkas_active_prev = lkas_active;
     }
 
     // sample wheel speed, averaging opposite corners
