@@ -33,9 +33,18 @@ def manager_init():
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
 
   default_params = [
+    ("AutoLaneChangeTimer", "0"),
+    ("BrightnessControl", "0"),
+    ("CarModel", ""),
     ("CompletedTrainingVersion", "0"),
+    ("EndToEndToggle", "1"),
     ("HasAcceptedTerms", "0"),
+    ("LanelessMode", "2"),
+    ("MaxTimeOffroad", "9"),
+    ("OnroadScreenOff", "0"),
+    ("OnroadScreenOffBrightness", "0"),
     ("OpenpilotEnabledToggle", "1"),
+    ("UploadRaw", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

@@ -1,6 +1,7 @@
 #include "selfdrive/ui/ui.h"
 
 #include <unistd.h>
+#include <string>
 
 #include <cassert>
 #include <cmath>
@@ -66,6 +67,7 @@ static void update_line_data(const UIState *s, const cereal::ModelDataV2::XYZTDa
 }
 
 static void update_model(UIState *s, const cereal::ModelDataV2::Reader &model) {
+  SubMaster &sm = *(s->sm);
   UIScene &scene = s->scene;
   auto model_position = model.getPosition();
   float max_distance = std::clamp(model_position.getX()[TRAJECTORY_SIZE - 1],
@@ -87,6 +89,8 @@ static void update_model(UIState *s, const cereal::ModelDataV2::Reader &model) {
     scene.road_edge_stds[i] = road_edge_stds[i];
     update_line_data(s, road_edges[i], 0.025, 0, &scene.road_edge_vertices[i], max_idx);
   }
+
+  scene.lateral_plan = sm["lateralPlan"].getLateralPlan();
 
   // update path
   auto lead_one = model.getLeadsV3()[0];
@@ -111,6 +115,13 @@ static void update_state(UIState *s) {
     auto cs = sm["controlsState"].getControlsState();
     scene.engageable = cs.getEngageable() || cs.getEnabled();
     scene.dm_active = sm["driverMonitoringState"].getDriverMonitoringState().getIsActiveMode();
+  }
+
+  if (scene.started && sm.updated("controlsState")) {
+    scene.controls_state = sm["controlsState"].getControlsState();
+  }
+  if (sm.updated("carState")){
+    scene.car_state = sm["carState"].getCarState();
   }
   if (sm.updated("modelV2") && s->vg) {
     auto model = sm["modelV2"].getModelV2();
@@ -183,13 +194,41 @@ static void update_state(UIState *s) {
     scene.light_sensor = std::clamp<float>(1.0 - (ev / max_ev), 0.0, 1.0);
   }
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
+  if (sm.updated("lateralPlan")) {
+    scene.lateral_plan = sm["lateralPlan"].getLateralPlan();
+    auto data = sm["lateralPlan"].getLateralPlan();
+
+    scene.lateralPlan.laneWidth = data.getLaneWidth();
+    scene.lateralPlan.dProb = data.getDProb();
+    scene.lateralPlan.lProb = data.getLProb();
+    scene.lateralPlan.rProb = data.getRProb();
+    scene.lateralPlan.lanelessModeStatus = data.getLanelessMode();
+  }
 }
 
 static void update_params(UIState *s) {
   const uint64_t frame = s->sm->frame;
   UIScene &scene = s->scene;
+  Params params;
   if (frame % (5*UI_FREQ) == 0) {
     scene.is_metric = Params().getBool("IsMetric");
+  }
+
+  if (!scene.read_params) {
+    scene.brightness = std::stoi(params.get("BrightnessControl"));
+    scene.onroadScreenOff = std::stoi(params.get("OnroadScreenOff"));
+    scene.onroadScreenOffBrightness = std::stoi(params.get("OnroadScreenOffBrightness"));
+
+    if (scene.onroadScreenOff > 0) {
+      scene.osoTimer = scene.onroadScreenOff * 60 * UI_FREQ;
+    } else if (scene.onroadScreenOff == 0) {
+      scene.osoTimer = 30 * UI_FREQ;
+    } else if (scene.onroadScreenOff == -1) {
+      scene.osoTimer = 15 * UI_FREQ;
+    } else {
+      scene.osoTimer = -1;
+    }
+
   }
 }
 
@@ -213,6 +252,7 @@ static void update_status(UIState *s) {
       s->status = STATUS_DISENGAGED;
       s->scene.started_frame = s->sm->frame;
       s->scene.end_to_end = Params().getBool("EndToEndToggle");
+      s->scene.laneless_mode = std::stoi(Params().get("LanelessMode"));
       s->wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
     }
     // Invisible until we receive a calibration message.
@@ -226,6 +266,7 @@ QUIState::QUIState(QObject *parent) : QObject(parent) {
   ui_state.sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "sensorEvents", "carState", "liveLocationKalman",
+    "lateralPlan",
   });
 
   ui_state.wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
@@ -291,11 +332,23 @@ void Device::updateBrightness(const UIState &s) {
 
   if (!s.scene.started) {
     clipped_brightness = BACKLIGHT_OFFROAD;
+  } else if (s.scene.onroadScreenOff != -2 && s.scene.touched2) {
+    sleep_time = s.scene.osoTimer;
+  } else if (s.scene.controls_state.getAlertSize() != cereal::ControlsState::AlertSize::NONE && s.scene.onroadScreenOff != -2) {
+    sleep_time = s.scene.osoTimer;
+  } else if (sleep_time > 0 && s.scene.onroadScreenOff != -2) {
+    sleep_time--;
+  } else if (s.scene.started && sleep_time == -1 && s.scene.onroadScreenOff != -2) {
+    sleep_time = s.scene.osoTimer;
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
+  } else if (s.scene.started && sleep_time == 0 && s.scene.onroadScreenOff != -2) {
+    brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
+  } else if( s.scene.brightness ) {
+    brightness = s.scene.brightness * 0.99;
   }
 
   if (brightness != last_brightness) {
