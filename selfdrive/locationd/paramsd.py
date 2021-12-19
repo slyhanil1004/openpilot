@@ -166,12 +166,20 @@ def main(sm=None, pm=None):
       msg.liveParameters.angleOffsetFastStd = float(P[States.ANGLE_OFFSET_FAST])
 
       if sm.frame % 1200 == 0:  # once a minute
-        params = {
-          'carFingerprint': CP.carFingerprint,
-          'steerRatio': msg.liveParameters.steerRatio,
-          'stiffnessFactor': msg.liveParameters.stiffnessFactor,
-          'angleOffsetAverageDeg': msg.liveParameters.angleOffsetAverageDeg,
-        }
+        if params_reader.get_bool("BypassLiveParameters"):
+          params = {
+            'carFingerprint': CP.carFingerprint,
+            'steerRatio': CP.steerRatio,
+            'stiffnessFactor': 1.0,
+            'angleOffsetAverageDeg': 0.0,
+          }
+        else:
+          params = {
+            'carFingerprint': CP.carFingerprint,
+            'steerRatio': msg.liveParameters.steerRatio,
+            'stiffnessFactor': msg.liveParameters.stiffnessFactor,
+            'angleOffsetAverageDeg': msg.liveParameters.angleOffsetAverageDeg,
+          }
         put_nonblocking("LiveParameters", json.dumps(params))
 
       pm.send('liveParameters', msg)
