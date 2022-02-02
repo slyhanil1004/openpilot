@@ -22,7 +22,7 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.mazda)]
     ret.radarOffCan = True
 
-    ret.dashcamOnly = candidate not in [CAR.CX9_2021]
+    ret.dashcamOnly = candidate not in (CAR.CX9_2021,)
 
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 1.0
@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.19], [0.019]]
       ret.lateralTuning.pid.kf = 0.00006
-    elif candidate in [CAR.CX9, CAR.CX9_2021]:
+    elif candidate in (CAR.CX9, CAR.CX9_2021):
       ret.mass = 4217 * CV.LB_TO_KG + STD_CARGO_KG
       ret.wheelbase = 3.1
       ret.steerRatio = 17.6
@@ -86,7 +86,9 @@ class CarInterface(CarInterfaceBase):
     # events
     events = self.create_common_events(ret)
 
-    if self.CS.low_speed_alert:
+    if self.CS.lkas_disabled:
+      events.add(EventName.lkasDisabled)
+    elif self.CS.low_speed_alert:
       events.add(EventName.belowSteerSpeed)
 
     ret.events = events.to_msg()
@@ -95,6 +97,6 @@ class CarInterface(CarInterfaceBase):
     return self.CS.out
 
   def apply(self, c):
-    can_sends = self.CC.update(c, self.CS, self.frame)
+    ret = self.CC.update(c, self.CS, self.frame)
     self.frame += 1
-    return can_sends
+    return ret
