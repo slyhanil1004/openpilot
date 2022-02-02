@@ -35,7 +35,7 @@ AddrCheckStruct hyundai_addr_checks[] = {
            {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
   {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
   {.msg = {{916, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{1057, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{1057, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
 };
 #define HYUNDAI_ADDR_CHECK_LEN (sizeof(hyundai_addr_checks) / sizeof(hyundai_addr_checks[0]))
 
@@ -149,7 +149,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
                                  hyundai_get_checksum, hyundai_compute_checksum,
                                  hyundai_get_counter);
 
-  if (valid && (GET_BUS(to_push) == 0U)) {
+  if (valid)) {
     int addr = GET_ADDR(to_push);
 
     if (addr == 593) {
