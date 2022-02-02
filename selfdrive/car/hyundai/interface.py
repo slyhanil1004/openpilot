@@ -295,8 +295,8 @@ class CarInterface(CarInterfaceBase):
 
     events = self.create_common_events(ret, pcm_enable=self.CS.CP.pcmCruise)
 
-    if self.CS.brake_error:
-      events.add(EventName.brakeUnavailable)
+    #if self.CS.brake_error:
+      #events.add(EventName.brakeUnavailable)
     if self.CS.park_brake:
       events.add(EventName.parkBrake)
 
