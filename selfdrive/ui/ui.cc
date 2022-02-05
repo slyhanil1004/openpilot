@@ -190,11 +190,11 @@ static void update_state(UIState *s) {
     scene.lateralPlan.dynamicLaneProfileStatus = data.getDynamicLaneProfile();
   }
 
-  if (sm.updated("carState")) {
+  /*if (sm.updated("carState")) {
     auto car_state = sm["carState"].getCarState();
 
     //scene.carState.radarObjValid = car_state.getRadarObjValid();
-  }
+  }*/
 }
 
 void ui_update_params(UIState *s) {
