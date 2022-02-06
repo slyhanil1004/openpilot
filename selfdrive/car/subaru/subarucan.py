@@ -3,14 +3,14 @@ from cereal import car
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-def create_steering_control(packer, apply_steer, frame, steer_step):
+def create_steering_control(packer, apply_steer, apply_steer_req, frame, steer_step):
 
   idx = (frame / steer_step) % 16
 
   values = {
     "Counter": idx,
     "LKAS_Output": apply_steer,
-    "LKAS_Request": 1 if apply_steer != 0 else 0,
+    "LKAS_Request": 1 if apply_steer_req else 0,
     "SET_1": 1
   }
 
@@ -117,14 +117,14 @@ def subaru_preglobal_checksum(packer, values, addr):
   dat = packer.make_can_msg(addr, 0, values)[2]
   return (sum(dat[:7])) % 256
 
-def create_preglobal_steering_control(packer, apply_steer, frame, steer_step):
+def create_preglobal_steering_control(packer, apply_steer, apply_steer_req, frame, steer_step):
 
   idx = (frame / steer_step) % 8
 
   values = {
     "Counter": idx,
     "LKAS_Command": apply_steer,
-    "LKAS_Active": 1 if apply_steer != 0 else 0
+    "LKAS_Active": 1 if apply_steer_req else 0
   }
   values["Checksum"] = subaru_preglobal_checksum(packer, values, "ES_LKAS")
 

@@ -172,8 +172,8 @@ class CarState(CarStateBase):
             self.accEnabled = True
 
       if not self.disable_mads:
-        if self.prev_acc_main_enabled != 2: #1 == not ACC Main button
-          if self.acc_main_enabled == 2:
+        if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
+          if self.acc_main_enabled == 1:
             self.accMainEnabled = not self.accMainEnabled
     else:
       self.accMainEnabled = False
