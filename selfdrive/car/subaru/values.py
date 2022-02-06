@@ -17,6 +17,9 @@ class CarControllerParams:
     self.STEER_DRIVER_MULTIPLIER = 10  # weight driver torque heavily
     self.STEER_DRIVER_FACTOR = 1       # from dbc
 
+    # SUBARU LKAS ICON STATE
+    self.FEATURE_NO_ENGINE_STOP_START = True
+
 class CAR:
   ASCENT = "SUBARU ASCENT LIMITED 2019-22"
   IMPREZA = "SUBARU IMPREZA LIMITED 2019-22"

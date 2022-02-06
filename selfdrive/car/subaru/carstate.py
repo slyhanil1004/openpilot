@@ -89,7 +89,8 @@ class CarState(CarStateBase):
     self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
 
     if self.car_fingerprint == PREGLOBAL_CARS:
-      self.acc_main_enabled = cp_cam.vl["ES_Distance"]["Cruise_Button"] == 0
+      #self.acc_main_enabled = cp_cam.vl["ES_Distance"]["Cruise_Button"] == 0
+      self.acc_main_enabled = cp_cam.vl["ES_LKAS_State"]["ES_LKAS_State"] == 0
     else:
       self.acc_main_enabled = cp.vl["Cruise_Buttons"]["Main"] == 0
 
@@ -130,6 +131,8 @@ class CarState(CarStateBase):
       ret.steeringAngleDeg = cp.vl["Steering_Torque"]["Steering_Angle"]
     ret.steeringTorque = cp.vl["Steering_Torque"]["Steer_Torque_Sensor"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD[self.car_fingerprint]
+
+    self.persistLkasIconDisabled = cp_cam.vl["ES_LKAS_State"]["ES_LKAS_State"] == 0
 
     if self.car_fingerprint == CAR.OUTBACK:
       ret.cruiseState.enabled = cp_body.vl["CruiseControl"]["Cruise_Activated"] != 0

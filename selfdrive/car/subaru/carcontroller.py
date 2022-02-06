@@ -24,6 +24,7 @@ class CarController():
     self.manual_hold = False
     self.prev_cruise_state = 0
 
+    self.has_set_lkas = False
 
     self.p = CarControllerParams(CP)
     self.packer = CANPacker(DBC[CP.carFingerprint]['pt'])
@@ -115,6 +116,16 @@ class CarController():
 
     if CS.CP.carFingerprint != CAR.CROSSTREK_2020H:
       self.prev_close_distance = CS.close_distance
+
+    if self.p.FEATURE_NO_ENGINE_STOP_START:
+      # GLOBAL only
+      if CS.CP.carFingerprint not in PREGLOBAL_CARS:
+        if CS.persistLkasIconDisabled == 0:
+          self.has_set_lkas = True
+
+        if self.es_lkas_cnt != CS.es_lkas_msg["Counter"] and not self.has_set_lkas:
+          can_sends.append(subarucan.create_es_lkas_disable_startup_lkas(self.packer, CS.es_lkas_msg, True))
+          self.es_lkas_cnt = CS.es_lkas_msg["Counter"]
 
     # *** alerts and pcm cancel ***
 

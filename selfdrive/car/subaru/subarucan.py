@@ -73,6 +73,16 @@ def create_es_lkas(packer, es_lkas_msg, acc_main_enabled, visual_alert, left_lin
 
   return packer.make_can_msg("ES_LKAS_State", 0, values)
 
+def create_es_lkas_disable_startup_lkas(packer, es_lkas_msg, lkas_btn):
+
+  values = copy.copy(es_lkas_msg)
+
+  if lkas_btn:
+    values["LKAS_ACTIVE"] = 0 # LKAS lane lines Not enabled
+    values["LKAS_Dash_State"] = 0 # LKAS Not enabled
+
+  return packer.make_can_msg("ES_LKAS_State", 0, values)
+
 def create_es_dashstatus(packer, dashstatus_msg):
   values = copy.copy(dashstatus_msg)
 
