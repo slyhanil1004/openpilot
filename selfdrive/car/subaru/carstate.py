@@ -132,7 +132,7 @@ class CarState(CarStateBase):
     ret.steeringTorque = cp.vl["Steering_Torque"]["Steer_Torque_Sensor"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD[self.car_fingerprint]
 
-    self.persistLkasIconDisabled = cp_cam.vl["ES_LKAS_State"]["ES_LKAS_State"] == 0
+    self.persistLkasIconDisabled = cp_cam.vl["ES_LKAS_State"]["LKAS_Dash_State"] == 0
 
     if self.car_fingerprint == CAR.OUTBACK:
       ret.cruiseState.enabled = cp_body.vl["CruiseControl"]["Cruise_Activated"] != 0
