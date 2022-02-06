@@ -90,9 +90,11 @@ static int subaru_rx_hook(CANPacket_t *to_push) {
 
   if (valid && (GET_BUS(to_push) == 2U)) {
     int addr = GET_ADDR(to_push);
-    if (addr == 0x576) {
-      bool lkas_pressed = (GET_BYTE(to_push, 2) & 0x4) > 0; // LKAS_Dash_State signal
-      if (lkas_pressed && !lkas_pressed_prev) {
+    if (addr == 0x576)
+    {
+      bool lkas_pressed = (GET_BYTE(to_push, 2) & 0x8) > 0; // LKAS_Dash_State signal
+      if (lkas_pressed && !lkas_pressed_prev)
+      {
         controls_allowed = 1;
       }
       lkas_pressed_prev = lkas_pressed;
