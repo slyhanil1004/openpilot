@@ -205,7 +205,7 @@ class CarState(CarStateBase):
     ret.steerWarning = False
 
     if self.accMainEnabled:
-      ret.steerError = cp.vl["Steering_Torque"]["Steer_Error_1"] == 1
+      #ret.steerError = cp.vl["Steering_Torque"]["Steer_Error_1"] == 1
       if self.car_fingerprint not in PREGLOBAL_CARS:
         if (self.automaticLaneChange and not self.belowLaneChangeSpeed and (self.rightBlinkerOn or self.leftBlinkerOn)) or not (self.rightBlinkerOn or self.leftBlinkerOn):
           ret.steerWarning = cp.vl["Steering_Torque"]["Steer_Warning"] == 1
