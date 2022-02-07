@@ -17,6 +17,7 @@ class CarState(CarStateBase):
     params = Params()
     self.has_epb = params.get("ManualParkingBrakeSNGToggle", encoding='utf8') == "0"
 
+    self.steer_not_allowed = False
     self.resumeAvailable = False
     self.accEnabled = False
     self.accMainEnabled = False
@@ -205,7 +206,8 @@ class CarState(CarStateBase):
     ret.steerWarning = False
 
     if self.accMainEnabled:
-      #ret.steerError = cp.vl["Steering_Torque"]["Steer_Error_1"] == 1
+      ret.steerError = cp.vl["Steering_Torque"]["Steer_Error_1"] == 1
+      self.steer_not_allowed = cp.vl["Steering_Torque"]["Steer_Error_1"] == 1
       if self.car_fingerprint not in PREGLOBAL_CARS:
         if (self.automaticLaneChange and not self.belowLaneChangeSpeed and (self.rightBlinkerOn or self.leftBlinkerOn)) or not (self.rightBlinkerOn or self.leftBlinkerOn):
           ret.steerWarning = cp.vl["Steering_Torque"]["Steer_Warning"] == 1
